@@ -18,6 +18,8 @@ class MainActivity : AppCompatActivity() {
     private val imageView: ImageView by bindView(R.id.imageView)
     private val startButton: Button by bindView(R.id.startButton)
 
+    private val googleApiKey = resources.getString(R.string.gcp_api_key)
+
     private fun dispatchPictureIntent() {
         val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
         if (intent.resolveActivity(packageManager) != null) {
