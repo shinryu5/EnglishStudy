@@ -1,5 +1,6 @@
 package com.lanpn.englishforkids.activities
 
+import android.Manifest
 import android.content.Intent
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
@@ -10,6 +11,7 @@ import android.graphics.Bitmap
 import android.view.View
 import android.widget.Button
 import android.widget.ImageView
+import com.lanpn.englishforkids.handlers.GcpHandler
 import kotterknife.bindView
 
 const val REQUEST_CAPTURE_CODE = 1
@@ -19,12 +21,17 @@ class MainActivity : AppCompatActivity() {
     private val startButton: Button by bindView(R.id.startButton)
 
     private val googleApiKey = resources.getString(R.string.gcp_api_key)
+    private val gcpHandler = GcpHandler(googleApiKey)
 
     private fun dispatchPictureIntent() {
-        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        if (intent.resolveActivity(packageManager) != null) {
-            startActivityForResult(intent, REQUEST_CAPTURE_CODE)
+        if (PermissionUtils.requestPermission(this, REQUEST_CAPTURE_CODE,
+                Manifest.permission.CAMERA)) {
+            val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+            if (intent.resolveActivity(packageManager) != null) {
+                startActivityForResult(intent, REQUEST_CAPTURE_CODE)
+            }
         }
+
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -32,12 +39,7 @@ class MainActivity : AppCompatActivity() {
             val extras = data!!.extras
             val imageBitmap = extras.get("data") as Bitmap
 
-            handleImage(imageBitmap)
         }
-    }
-
-    private fun handleImage(image: Bitmap) {
-
     }
 
     private fun showImage(image: Bitmap) {
