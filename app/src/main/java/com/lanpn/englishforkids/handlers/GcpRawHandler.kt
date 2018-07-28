@@ -8,6 +8,8 @@ import com.google.gson.Gson
 import com.lanpn.englishforkids.models.AnnotationResponse
 import com.lanpn.englishforkids.models.LocalizedObjectAnnotation
 import com.lanpn.englishforkids.models.SingleLocalizationRequest
+import com.lanpn.englishforkids.views.drawAnnotations
+import com.lanpn.englishforkids.views.scaleBitmap
 import java.io.ByteArrayOutputStream
 
 class GcpRawHandler(private val apiKey: String,
@@ -24,6 +26,7 @@ class GcpRawHandler(private val apiKey: String,
     }
 
     override fun handleImage(image: Bitmap) {
+//        val b64 = bitmapToBase64(scaleBitmap(image, scale = SEND_SCALE))
         val b64 = bitmapToBase64(image)
         val requestBody = constructRequestBody(b64)
 
@@ -34,9 +37,22 @@ class GcpRawHandler(private val apiKey: String,
                 .responseString { _, _, result ->
                     result.fold({ d ->
                         val responseObj: AnnotationResponse = Gson().fromJson(d, AnnotationResponse::class.java)
-                        val annotations = if (responseObj.responses!!.isEmpty()) ArrayList()
-                            else responseObj.responses!![0].localizedObjectAnnotations!!
-                        callback(image, annotations)
+                        Log.d("Response", responseObj.toString())
+
+                        if (responseObj.responses == null) {
+                            callback(image, ArrayList())
+                        } else {
+                            if (responseObj.responses!!.isEmpty()) {
+                                callback(image, ArrayList())
+                            } else {
+                                val annotations = responseObj.responses!![0].localizedObjectAnnotations
+                                if (annotations == null) {
+                                    callback(image, ArrayList())
+                                } else {
+                                    callback(image, annotations)
+                                }
+                            }
+                        }
                     }, { err ->
                         Log.e("Fuel Error", err.message)
                         callback(image, ArrayList())
