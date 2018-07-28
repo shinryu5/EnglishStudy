@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">English For Kids</string>
+    <string name="take_picture">Take Picture</string>
+    <string name="open_gallery">Open From Gallery</string>
 </resources>
