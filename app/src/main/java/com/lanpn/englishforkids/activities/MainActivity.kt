@@ -1,6 +1,7 @@
 package com.lanpn.englishforkids.activities
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
@@ -8,34 +9,43 @@ import android.provider.MediaStore
 import com.lanpn.englishforkids.R
 import android.graphics.Bitmap
 import android.os.Environment
+import android.speech.tts.TextToSpeech
 import android.view.View
-import com.lanpn.englishforkids.handlers.GcpRawHandler
+import com.lanpn.englishforkids.handlers.GcpHttpHandler
 import com.lanpn.englishforkids.handlers.ImageHandler
 import com.lanpn.englishforkids.models.LocalizedObjectAnnotation
 import android.support.v4.content.FileProvider
-import android.widget.Button
+import android.view.MotionEvent
+import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.Toast
-import com.lanpn.englishforkids.views.drawAnnotations
-import com.lanpn.englishforkids.views.loadSampledBitmap
+import com.github.clans.fab.FloatingActionMenu
+import com.lanpn.englishforkids.utils.PermissionUtils
+import com.lanpn.englishforkids.utils.ImageAnnotationTask
+import com.lanpn.englishforkids.utils.getPath
+import com.lanpn.englishforkids.utils.loadSampledBitmap
 import kotterknife.bindView
 import java.io.File
-import java.io.FileOutputStream
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.collections.ArrayList
 
 
 const val REQUEST_CAPTURE_CODE = 1
+const val REQUEST_GALLERY_CODE = 2
 
 class MainActivity : AppCompatActivity() {
     private var googleApiKey: String? = null
     private var imageHandler: ImageHandler? = null
     private var imagePath: String? = null
+    private var textToSpeech: TextToSpeech? = null
+    private var annotations = emptyList<LocalizedObjectAnnotation>()
+    private var imageBitmap: Bitmap? = null
 
-    val pictureButton: Button by bindView(R.id.button)
-    val galleryButton: Button by bindView(R.id.button2)
-    val progressBar: ProgressBar by bindView(R.id.progressBar)
+    private val progressBar: ProgressBar by bindView(R.id.progressBar)
+    private val imageView: ImageView by bindView(R.id.imageView2)
+    private val floatMenu: FloatingActionMenu by bindView(R.id.floatMenu)
 
     private fun dispatchPictureIntent() {
         if (PermissionUtils.requestPermission(this, REQUEST_CAPTURE_CODE,
@@ -57,47 +67,79 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun loadingOn() {
-        pictureButton.isEnabled = false
-        galleryButton.isEnabled = false
+    private fun dispatchGalleryIntent() {
+        if (PermissionUtils.requestPermission(this, REQUEST_GALLERY_CODE,
+                        Manifest.permission.READ_EXTERNAL_STORAGE)) {
+            val intent = Intent(Intent.ACTION_PICK)
+            intent.type = "image/*"
+            startActivityForResult(intent, REQUEST_GALLERY_CODE)
+        }
+    }
+
+    private fun loadingOn() {
+        imageView.visibility = View.GONE
+        floatMenu.isEnabled = false
         progressBar.visibility = View.VISIBLE
     }
 
-    fun loadingOff() {
-        pictureButton.isEnabled = true
-        galleryButton.isEnabled = true
+    private fun loadingOff() {
+        floatMenu.isEnabled = true
+        floatMenu.close(true)
         progressBar.visibility = View.INVISIBLE
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if (requestCode == REQUEST_CAPTURE_CODE && resultCode == RESULT_OK) {
-            val imageBitmap = loadSampledBitmap(imagePath!!, scale = 0.25f)
-            imageHandler!!.handleImage(imageBitmap)
+            imageBitmap = loadSampledBitmap(imagePath!!, scale = 0.25f)
+        } else if (requestCode == REQUEST_GALLERY_CODE && resultCode == RESULT_OK) {
+            imagePath = getPath(this, data?.data!!)
+            if (imagePath != null) {
+                imageBitmap = loadSampledBitmap(imagePath!!)
+            }
         }
+
+        if (imageBitmap != null)
+            imageHandler!!.handleImage(imageBitmap!!)
     }
 
     private fun showImage(image: Bitmap, annotations: ArrayList<LocalizedObjectAnnotation>) {
         loadingOn()
-        val decoratedImage = drawAnnotations(image, annotations)
-        val decorPath = createImageFile("decorated")
-        decoratedImage.compress(Bitmap.CompressFormat.PNG, 100, FileOutputStream(decorPath))
-
-        val intent = Intent(this, ImageViewActivity::class.java).apply {
-            putExtra("imagePath", decorPath.absolutePath)
-            putExtra("annotations", annotations)
+        this.annotations = annotations.sortedBy { it.boundingPoly?.diameter }
+        val task = ImageAnnotationTask(image, annotations) {
+            loadingOff()
+            if (annotations.size < 1) {
+                Toast.makeText(this, "No objects found in image", Toast.LENGTH_LONG).show()
+            }
+            imageView.setImageBitmap(it)
+            imageView.visibility = View.VISIBLE
         }
-        loadingOff()
-
-        startActivity(intent)
+        task.execute()
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         googleApiKey = resources.getString(R.string.gcp_api_key)
-        imageHandler = GcpRawHandler(googleApiKey!!, ::showImage)
+        imageHandler = GcpHttpHandler(googleApiKey!!, ::showImage)
 
         setContentView(R.layout.activity_main)
+
+        imageView.setOnTouchListener { _, motionEvent ->
+            if (motionEvent.action == MotionEvent.ACTION_DOWN) {
+                val x = motionEvent.x + imageView.top
+                val y = motionEvent.y + imageView.left
+
+                for (annotation in annotations) {
+                    if (annotation.boundingPoly!!.isInside(x, y, imageBitmap!!.width.toFloat(), imageBitmap!!.height.toFloat())) {
+                        textToSpeech?.speak(annotation.name, TextToSpeech.QUEUE_FLUSH, null)
+                        break
+                    }
+                }
+
+            }
+            return@setOnTouchListener false
+        }
     }
 
     @Throws(IOException::class)
@@ -121,9 +163,32 @@ class MainActivity : AppCompatActivity() {
         dispatchPictureIntent()
     }
 
-    override fun onResume() {
-        super.onResume()
-
+    fun onGalleryClick(view: View) {
+        dispatchGalleryIntent()
     }
 
+    override fun onBackPressed() {
+        if (imageView.visibility == View.GONE)
+            super.onBackPressed()
+        else {
+            imageView.visibility = View.GONE
+            annotations = emptyList()
+            imagePath = null
+            imageBitmap = null
+        }
+    }
+
+    override fun onStart() {
+        // Set up TTS
+        textToSpeech = TextToSpeech(this) {
+            textToSpeech?.language = Locale.US
+        }
+        super.onStart()
+    }
+
+    override fun onStop() {
+        textToSpeech?.stop()
+        textToSpeech?.shutdown()
+        super.onStop()
+    }
 }

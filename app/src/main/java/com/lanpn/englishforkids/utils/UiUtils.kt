@@ -1,4 +1,4 @@
-package com.lanpn.englishforkids.activities
+package com.lanpn.englishforkids.utils
 
 import android.support.v7.app.AppCompatActivity
 import android.view.View

@@ -1,4 +1,4 @@
-package com.lanpn.englishforkids.views
+package com.lanpn.englishforkids.utils
 
 import android.graphics.*
 import com.lanpn.englishforkids.models.BoundingPoly
@@ -7,6 +7,7 @@ import kotlin.math.max
 import android.graphics.BitmapFactory
 import android.graphics.Bitmap
 import android.media.ExifInterface
+import android.os.AsyncTask
 
 fun mutableBitmap(bitmap: Bitmap) : Bitmap {
     return bitmap.copy(bitmap.config, true)
@@ -101,12 +102,12 @@ fun drawAnnotations(bitmap: Bitmap, annotations: List<LocalizedObjectAnnotation>
     val rectPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     rectPaint.style = Paint.Style.STROKE
     rectPaint.color = Color.rgb(244, 192, 78)
-    rectPaint.strokeWidth = 9f
+    rectPaint.strokeWidth = 0.01f * bitmap.width
 
     // Paint for text
     val textPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     textPaint.color = Color.rgb(244, 192, 78)
-    textPaint.textSize = 70f
+    textPaint.textSize = 0.05f * bitmap.width
 
     for (annotation in filterAnnotations(annotations)) {
         if ((annotation.boundingPoly != null) and (annotation.name != null)) {
@@ -140,4 +141,17 @@ fun insertText(canvas: Canvas, paint: Paint, boundingPoly: BoundingPoly, text: S
     val tx = max(bottomCenter.x!! - textBound.width() / 2, 0f)
     val ty = max(bottomCenter.y!! - 10, 1f)
     canvas.drawText(text, tx, ty, paint)
+}
+
+class ImageAnnotationTask(private val image: Bitmap,
+                          private val annotations: List<LocalizedObjectAnnotation>,
+                          private val callback: (Bitmap) -> Unit)
+    : AsyncTask<Void, Void, Bitmap>() {
+    override fun doInBackground(vararg p0: Void?): Bitmap {
+        return drawAnnotations(image, annotations)
+    }
+
+    override fun onPostExecute(result: Bitmap?) {
+        callback(result!!)
+    }
 }

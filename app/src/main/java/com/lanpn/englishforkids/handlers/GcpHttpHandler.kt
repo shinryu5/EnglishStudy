@@ -8,12 +8,10 @@ import com.google.gson.Gson
 import com.lanpn.englishforkids.models.AnnotationResponse
 import com.lanpn.englishforkids.models.LocalizedObjectAnnotation
 import com.lanpn.englishforkids.models.SingleLocalizationRequest
-import com.lanpn.englishforkids.views.drawAnnotations
-import com.lanpn.englishforkids.views.scaleBitmap
 import java.io.ByteArrayOutputStream
 
-class GcpRawHandler(private val apiKey: String,
-                    private val callback: (Bitmap, ArrayList<LocalizedObjectAnnotation>) -> Unit) : ImageHandler {
+class GcpHttpHandler(private val apiKey: String,
+                     private val callback: (Bitmap, ArrayList<LocalizedObjectAnnotation>) -> Unit) : ImageHandler {
     private fun bitmapToBase64(bitmap: Bitmap) : String {
         val byteStream = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteStream)

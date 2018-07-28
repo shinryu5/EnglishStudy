@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.lanpn.englishforkids.activities
+package com.lanpn.englishforkids.utils
 
 import android.app.Activity
 import android.content.pm.PackageManager

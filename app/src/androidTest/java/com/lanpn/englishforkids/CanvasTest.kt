@@ -3,9 +3,9 @@ package com.lanpn.englishforkids
 import android.graphics.drawable.BitmapDrawable
 import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
-import com.lanpn.englishforkids.handlers.GcpRawHandler
-import com.lanpn.englishforkids.views.drawAnnotations
-import com.lanpn.englishforkids.views.scaleBitmap
+import com.lanpn.englishforkids.handlers.GcpHttpHandler
+import com.lanpn.englishforkids.utils.drawAnnotations
+import com.lanpn.englishforkids.utils.scaleBitmap
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -20,7 +20,7 @@ class CanvasTest {
         val b2 = d.bitmap
         var stop = false
 
-        val handler = GcpRawHandler(key) { bm, annotations ->
+        val handler = GcpHttpHandler(key) { bm, annotations ->
             val newBm = drawAnnotations(bm, annotations)
             stop = true
         }

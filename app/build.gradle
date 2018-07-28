@@ -62,4 +62,5 @@ dependencies {
     implementation 'com.jakewharton:kotterknife:0.1.0-SNAPSHOT'
     implementation 'com.github.kittinunf.fuel:fuel-android:1.14.0'
     implementation 'com.github.kittinunf.fuel:fuel-gson:1.14.0'
+    implementation 'com.github.clans:fab:1.6.4'
 }
