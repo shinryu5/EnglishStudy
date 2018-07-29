@@ -1,6 +1,5 @@
 package com.lanpn.englishforkids.models
 
-import android.graphics.Rect
 import android.graphics.RectF
 import java.io.Serializable
 import kotlin.math.max

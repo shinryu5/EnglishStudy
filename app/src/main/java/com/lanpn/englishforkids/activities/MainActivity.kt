@@ -4,7 +4,6 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.*
-import android.graphics.drawable.BitmapDrawable
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
@@ -28,7 +27,6 @@ import java.io.File
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.collections.ArrayList
 
 
 const val REQUEST_CAPTURE_CODE = 1
@@ -119,12 +117,9 @@ class MainActivity : AppCompatActivity() {
             }
             imageView.setImageBitmap(it)
             imageBitmap = it
-            decoratedBitmap = imageBitmap?.copy(imageBitmap?.config, true)
+            decoratedBitmap = mutableBitmap(imageBitmap!!)
             canvas = Canvas(decoratedBitmap)
             imageView.visibility = View.VISIBLE
-//            imageView.setImageDrawable(BitmapDrawable(resources, it))
-//            val bd = imageView.drawable!! as BitmapDrawable
-//            canvas = Canvas(bd.bitmap)
         }
         task.execute()
     }
@@ -139,8 +134,6 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         val highlightPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-//        highlightPaint.alpha = 25
-//        highlightPaint.color = Color.rgb(244, 192, 78)
         highlightPaint.color = Color.rgb(56, 121, 226)
         highlightPaint.style = Paint.Style.FILL_AND_STROKE
 
@@ -157,9 +150,6 @@ class MainActivity : AppCompatActivity() {
                         if (annotation.boundingPoly!!.isInside(x, y, width.toFloat(), height.toFloat())) {
                             textToSpeech?.speak(annotation.name, TextToSpeech.QUEUE_FLUSH, null)
                             // Hightlight the object
-                            val rect = annotation.boundingPoly!!.toRectF(width.toFloat(), height.toFloat())
-                            Log.d("Draw", rect.toShortString())
-//                            canvas!!.save()
                             highlightPaint.strokeWidth = 0.01f * imageBitmap!!.width
                             drawPoly(canvas!!, highlightPaint, annotation.boundingPoly!!)
                             imageView.setImageBitmap(decoratedBitmap)
@@ -171,12 +161,10 @@ class MainActivity : AppCompatActivity() {
                 }
                 MotionEvent.ACTION_UP -> {
                     try {
-//                        canvas?.restore()
                         // Had to do this because restore() won't fucking work
                         imageView.setImageBitmap(imageBitmap)
-                        decoratedBitmap = imageBitmap?.copy(imageBitmap?.config, true)
+                        decoratedBitmap = mutableBitmap(imageBitmap!!)
                         canvas = Canvas(decoratedBitmap)
-                        Log.d("RESTORE", "Restoring canvas")
                         view.invalidate()
                     } catch (e: IllegalStateException) {
 

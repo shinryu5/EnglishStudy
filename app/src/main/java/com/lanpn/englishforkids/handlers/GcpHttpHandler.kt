@@ -25,7 +25,6 @@ class GcpHttpHandler(private val apiKey: String,
     }
 
     override fun handleImage(image: Bitmap) {
-//        val b64 = bitmapToBase64(scaleBitmap(image, scale = SEND_SCALE))
         val b64 = bitmapToBase64(image)
         val requestBody = constructRequestBody(b64)
 
