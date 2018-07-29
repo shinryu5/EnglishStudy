@@ -13,7 +13,9 @@ import android.opengl.ETC1.getWidth
 import android.graphics.drawable.Drawable
 import android.graphics.Matrix.MSCALE_Y
 import android.graphics.Matrix.MSCALE_X
+import android.util.Log
 import android.widget.ImageView
+import kotlin.math.min
 
 
 fun mutableBitmap(bitmap: Bitmap) : Bitmap {
@@ -42,10 +44,13 @@ private fun calculateInSampleSize(options: BitmapFactory.Options,
     return inSampleSize
 }
 
-fun loadSampledBitmap(path: String, scale: Float = 0.3f) : Bitmap {
+fun loadSampledBitmap(path: String, maxSize: Int = 400) : Bitmap {
     val options = BitmapFactory.Options()
     options.inJustDecodeBounds = true
     BitmapFactory.decodeFile(path, options)
+
+    val longer = max(options.outWidth, options.outHeight)
+    val scale = if(longer < maxSize) 1f else maxSize.toFloat() / longer.toFloat()
 
     options.inSampleSize = calculateInSampleSize(options, (options.outWidth * scale).toInt(),
             (options.outHeight * scale).toInt())
@@ -118,8 +123,12 @@ fun drawAnnotations(bitmap: Bitmap, annotations: List<LocalizedObjectAnnotation>
 
     for (annotation in annotations) {
         if ((annotation.boundingPoly != null) and (annotation.name != null)) {
-            drawPoly(canvas, rectPaint, annotation.boundingPoly!!)
-            insertText(canvas, textPaint, annotation.boundingPoly!!, annotation.name!!)
+            try {
+                drawPoly(canvas, rectPaint, annotation.boundingPoly!!)
+                insertText(canvas, textPaint, annotation.boundingPoly!!, annotation.name!!)
+            } catch (e: NullPointerException) {
+
+            }
         }
     }
 

@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.*
+import android.os.AsyncTask
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
@@ -53,6 +54,7 @@ class MainActivity : AppCompatActivity() {
             if (intent.resolveActivity(packageManager) != null) {
                 try {
                     val photoFile = createImageFile()
+                    imagePath = photoFile.absolutePath
                     val photoUri = FileProvider.getUriForFile(this,
                             "com.lanpn.englishforkids.fileprovider",
                             photoFile)
@@ -89,23 +91,28 @@ class MainActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         loadingOn()
-        if (requestCode == REQUEST_CAPTURE_CODE && resultCode == RESULT_OK) {
-            imageBitmap = loadSampledBitmap(imagePath!!, scale = 0.25f)
-        } else if (requestCode == REQUEST_GALLERY_CODE && resultCode == RESULT_OK) {
-            imagePath = getPath(this, data?.data!!)
-            if (imagePath != null) {
+        AsyncTask.execute {
+            var stop = false
+            if (requestCode == REQUEST_CAPTURE_CODE && resultCode == RESULT_OK) {
                 imageBitmap = loadSampledBitmap(imagePath!!)
-            } else {
-                loadingOff()
-                return
+            } else if (requestCode == REQUEST_GALLERY_CODE && resultCode == RESULT_OK) {
+                imagePath = getPath(this, data?.data!!)
+                if (imagePath != null) {
+                    imageBitmap = loadSampledBitmap(imagePath!!)
+                } else {
+                    stop = true
+                }
+            }
+
+            if ((imageBitmap != null) or stop)
+                imageHandler!!.handleImage(imageBitmap!!)
+            else {
+                runOnUiThread {
+                    loadingOff()
+                }
             }
         }
 
-        if (imageBitmap != null)
-            imageHandler!!.handleImage(imageBitmap!!)
-        else {
-            loadingOff()
-        }
     }
 
     private fun showImage(image: Bitmap, annotations: List<LocalizedObjectAnnotation>) {
@@ -138,7 +145,6 @@ class MainActivity : AppCompatActivity() {
         highlightPaint.style = Paint.Style.FILL_AND_STROKE
 
         imageView.setOnTouchListener { view, motionEvent ->
-            Log.d("EVENT", motionEvent.action.toString())
             when (motionEvent.action) {
                 MotionEvent.ACTION_DOWN -> {
                     val (left, top, width, height) = getBitmapPositionInsideImageView(imageView)
@@ -190,7 +196,6 @@ class MainActivity : AppCompatActivity() {
         )
 
         // Save a file: path for use with ACTION_VIEW intents
-        imagePath = image.absolutePath
         return image
     }
 
@@ -206,12 +211,16 @@ class MainActivity : AppCompatActivity() {
         if (imageView.visibility == View.GONE)
             super.onBackPressed()
         else {
-            imageView.visibility = View.GONE
-            annotations = emptyList()
-            imagePath = null
-            imageBitmap = null
-            canvas = null
+            releaseImage()
         }
+    }
+
+    private fun releaseImage() {
+        imageView.visibility = View.GONE
+        annotations = emptyList()
+        imageBitmap = null
+        decoratedBitmap = null
+        canvas = null
     }
 
     override fun onStart() {
@@ -223,6 +232,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onStop() {
+        releaseImage()
         textToSpeech?.stop()
         textToSpeech?.shutdown()
         super.onStop()
