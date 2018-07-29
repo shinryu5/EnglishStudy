@@ -20,10 +20,7 @@ import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.Toast
 import com.github.clans.fab.FloatingActionMenu
-import com.lanpn.englishforkids.utils.PermissionUtils
-import com.lanpn.englishforkids.utils.ImageAnnotationTask
-import com.lanpn.englishforkids.utils.getPath
-import com.lanpn.englishforkids.utils.loadSampledBitmap
+import com.lanpn.englishforkids.utils.*
 import kotterknife.bindView
 import java.io.File
 import java.io.IOException
@@ -89,21 +86,27 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        loadingOn()
         if (requestCode == REQUEST_CAPTURE_CODE && resultCode == RESULT_OK) {
             imageBitmap = loadSampledBitmap(imagePath!!, scale = 0.25f)
         } else if (requestCode == REQUEST_GALLERY_CODE && resultCode == RESULT_OK) {
             imagePath = getPath(this, data?.data!!)
             if (imagePath != null) {
                 imageBitmap = loadSampledBitmap(imagePath!!)
+            } else {
+                loadingOff()
+                return
             }
         }
 
         if (imageBitmap != null)
             imageHandler!!.handleImage(imageBitmap!!)
+        else {
+            loadingOff()
+        }
     }
 
     private fun showImage(image: Bitmap, annotations: ArrayList<LocalizedObjectAnnotation>) {
-        loadingOn()
         this.annotations = annotations.sortedBy { it.boundingPoly?.diameter }
         val task = ImageAnnotationTask(image, annotations) {
             loadingOff()
@@ -127,11 +130,12 @@ class MainActivity : AppCompatActivity() {
 
         imageView.setOnTouchListener { _, motionEvent ->
             if (motionEvent.action == MotionEvent.ACTION_DOWN) {
-                val x = motionEvent.x + imageView.top
-                val y = motionEvent.y + imageView.left
+                val (left, top, width, height) = getBitmapPositionInsideImageView(imageView)
+                val x = motionEvent.x
+                val y = motionEvent.y - top
 
                 for (annotation in annotations) {
-                    if (annotation.boundingPoly!!.isInside(x, y, imageBitmap!!.width.toFloat(), imageBitmap!!.height.toFloat())) {
+                    if (annotation.boundingPoly!!.isInside(x, y, width.toFloat(), height.toFloat())) {
                         textToSpeech?.speak(annotation.name, TextToSpeech.QUEUE_FLUSH, null)
                         break
                     }

@@ -19,9 +19,9 @@ data class BoundingPoly(var normalizedVertices: ArrayList<Vertex>? = null) : Ser
     val topCenter: Vertex?
         get() {
             if (normalizedVertices == null) return null
-            val vTop = normalizedVertices!!.minBy { it.y!! }
-            val vLeft = normalizedVertices!!.minBy { it.x!! }
-            val vRight = normalizedVertices!!.maxBy { it.x!! }
+            val vTop = normalizedVertices!!.minBy { if (it.y != null) it.y!! else 0f }
+            val vLeft = normalizedVertices!!.minBy { if (it.x != null) it.x!! else 0f }
+            val vRight = normalizedVertices!!.maxBy { if (it.x != null) it.x!! else 0f }
             return Vertex((vLeft!!.x!! + vRight!!.x!!) / 2f, vTop!!.y)
         }
     val bottomCenter: Vertex?
