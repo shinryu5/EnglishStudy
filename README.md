@@ -8,9 +8,7 @@ When an object's bound is tapped, its name is read aloud using Android's Text-to
 
 ## Screenshots
 ![Screenshot](images/screenshot_1.png)
-
 ![Screenshot](images/screenshot_2.png)
-
 ![Screenshot](images/screenshot_3.png)
 
 ## API Key
