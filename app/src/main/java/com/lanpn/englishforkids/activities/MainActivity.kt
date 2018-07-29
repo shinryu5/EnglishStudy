@@ -3,11 +3,12 @@ package com.lanpn.englishforkids.activities
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.graphics.*
+import android.graphics.drawable.BitmapDrawable
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
 import com.lanpn.englishforkids.R
-import android.graphics.Bitmap
 import android.os.Environment
 import android.speech.tts.TextToSpeech
 import android.view.View
@@ -15,6 +16,7 @@ import com.lanpn.englishforkids.handlers.GcpHttpHandler
 import com.lanpn.englishforkids.handlers.ImageHandler
 import com.lanpn.englishforkids.models.LocalizedObjectAnnotation
 import android.support.v4.content.FileProvider
+import android.util.Log
 import android.view.MotionEvent
 import android.widget.ImageView
 import android.widget.ProgressBar
@@ -39,6 +41,8 @@ class MainActivity : AppCompatActivity() {
     private var textToSpeech: TextToSpeech? = null
     private var annotations = emptyList<LocalizedObjectAnnotation>()
     private var imageBitmap: Bitmap? = null
+    private var decoratedBitmap: Bitmap? = null
+    private var canvas: Canvas? = null
 
     private val progressBar: ProgressBar by bindView(R.id.progressBar)
     private val imageView: ImageView by bindView(R.id.imageView2)
@@ -106,15 +110,21 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun showImage(image: Bitmap, annotations: ArrayList<LocalizedObjectAnnotation>) {
+    private fun showImage(image: Bitmap, annotations: List<LocalizedObjectAnnotation>) {
         this.annotations = annotations.sortedBy { it.boundingPoly?.diameter }
         val task = ImageAnnotationTask(image, annotations) {
             loadingOff()
-            if (annotations.size < 1) {
+            if (annotations.isEmpty()) {
                 Toast.makeText(this, "No objects found in image", Toast.LENGTH_LONG).show()
             }
             imageView.setImageBitmap(it)
+            imageBitmap = it
+            decoratedBitmap = imageBitmap?.copy(imageBitmap?.config, true)
+            canvas = Canvas(decoratedBitmap)
             imageView.visibility = View.VISIBLE
+//            imageView.setImageDrawable(BitmapDrawable(resources, it))
+//            val bd = imageView.drawable!! as BitmapDrawable
+//            canvas = Canvas(bd.bitmap)
         }
         task.execute()
     }
@@ -128,21 +138,54 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_main)
 
-        imageView.setOnTouchListener { _, motionEvent ->
-            if (motionEvent.action == MotionEvent.ACTION_DOWN) {
-                val (left, top, width, height) = getBitmapPositionInsideImageView(imageView)
-                val x = motionEvent.x
-                val y = motionEvent.y - top
+        val highlightPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+//        highlightPaint.alpha = 25
+//        highlightPaint.color = Color.rgb(244, 192, 78)
+        highlightPaint.color = Color.rgb(56, 121, 226)
+        highlightPaint.style = Paint.Style.FILL_AND_STROKE
 
-                for (annotation in annotations) {
-                    if (annotation.boundingPoly!!.isInside(x, y, width.toFloat(), height.toFloat())) {
-                        textToSpeech?.speak(annotation.name, TextToSpeech.QUEUE_FLUSH, null)
-                        break
+        imageView.setOnTouchListener { view, motionEvent ->
+            Log.d("EVENT", motionEvent.action.toString())
+            when (motionEvent.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    val (left, top, width, height) = getBitmapPositionInsideImageView(imageView)
+                    val x = motionEvent.x - left
+                    val y = motionEvent.y - top
+
+                    // Check if the user clicked on an object
+                    for (annotation in annotations) {
+                        if (annotation.boundingPoly!!.isInside(x, y, width.toFloat(), height.toFloat())) {
+                            textToSpeech?.speak(annotation.name, TextToSpeech.QUEUE_FLUSH, null)
+                            // Hightlight the object
+                            val rect = annotation.boundingPoly!!.toRectF(width.toFloat(), height.toFloat())
+                            Log.d("Draw", rect.toShortString())
+//                            canvas!!.save()
+                            highlightPaint.strokeWidth = 0.01f * imageBitmap!!.width
+                            drawPoly(canvas!!, highlightPaint, annotation.boundingPoly!!)
+                            imageView.setImageBitmap(decoratedBitmap)
+
+                            view.invalidate()
+                            break
+                        }
                     }
                 }
+                MotionEvent.ACTION_UP -> {
+                    try {
+//                        canvas?.restore()
+                        // Had to do this because restore() won't fucking work
+                        imageView.setImageBitmap(imageBitmap)
+                        decoratedBitmap = imageBitmap?.copy(imageBitmap?.config, true)
+                        canvas = Canvas(decoratedBitmap)
+                        Log.d("RESTORE", "Restoring canvas")
+                        view.invalidate()
+                    } catch (e: IllegalStateException) {
 
+                    }
+                }
+                else -> {}
             }
-            return@setOnTouchListener false
+
+            return@setOnTouchListener true
         }
     }
 
@@ -179,6 +222,7 @@ class MainActivity : AppCompatActivity() {
             annotations = emptyList()
             imagePath = null
             imageBitmap = null
+            canvas = null
         }
     }
 

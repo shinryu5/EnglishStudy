@@ -71,7 +71,7 @@ fun scaleBitmap(bitmap: Bitmap, scale: Float = 0.5f) : Bitmap {
     return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, m, false)
 }
 
-const val OVERLAP_THRESHOLD = 1e-3
+const val OVERLAP_THRESHOLD = 1e-9
 
 fun filterAnnotations(annotations: List<LocalizedObjectAnnotation>) : List<LocalizedObjectAnnotation> {
     val newAnnotations = ArrayList<LocalizedObjectAnnotation>()
@@ -82,7 +82,7 @@ fun filterAnnotations(annotations: List<LocalizedObjectAnnotation>) : List<Local
             for (j in 0 until i) {
                 try {
                     val bc2 = annotations[j].boundingPoly!!.topCenter
-                    if ((bc1!!.x!! - bc2!!.x!! <= OVERLAP_THRESHOLD) and
+                    if ((bc1.x!! - bc2.x!! <= OVERLAP_THRESHOLD) and
                             (bc1.y!! - bc2.y!! <= OVERLAP_THRESHOLD)) {
                         overlapped = true
                         break
@@ -116,7 +116,7 @@ fun drawAnnotations(bitmap: Bitmap, annotations: List<LocalizedObjectAnnotation>
     textPaint.color = Color.rgb(244, 192, 78)
     textPaint.textSize = 0.05f * bitmap.width
 
-    for (annotation in filterAnnotations(annotations)) {
+    for (annotation in annotations) {
         if ((annotation.boundingPoly != null) and (annotation.name != null)) {
             drawPoly(canvas, rectPaint, annotation.boundingPoly!!)
             insertText(canvas, textPaint, annotation.boundingPoly!!, annotation.name!!)
@@ -141,7 +141,7 @@ fun drawPoly(canvas: Canvas, paint: Paint, boundingPoly: BoundingPoly) {
 fun insertText(canvas: Canvas, paint: Paint, boundingPoly: BoundingPoly, text: String) {
     val cWidth = canvas.width.toFloat()
     val cHeight = canvas.height.toFloat()
-    val bottomCenter = boundingPoly.topCenter?.deNormalize(cWidth, cHeight) ?: return
+    val bottomCenter = boundingPoly.topCenter.deNormalize(cWidth, cHeight) ?: return
 
     val textBound = Rect()
     paint.getTextBounds(text, 0, text.length, textBound)

@@ -1,5 +1,7 @@
 package com.lanpn.englishforkids.models
 
+import android.graphics.Rect
+import android.graphics.RectF
 import java.io.Serializable
 import kotlin.math.max
 
@@ -16,43 +18,60 @@ data class LocalizedObjectAnnotation (
 }
 
 data class BoundingPoly(var normalizedVertices: ArrayList<Vertex>? = null) : Serializable {
-    val topCenter: Vertex?
+    val topCenter: Vertex
         get() {
-            if (normalizedVertices == null) return null
+            if (normalizedVertices == null) return Vertex(0f, 0f)
             val vTop = normalizedVertices!!.minBy { if (it.y != null) it.y!! else 0f }
             val vLeft = normalizedVertices!!.minBy { if (it.x != null) it.x!! else 0f }
             val vRight = normalizedVertices!!.maxBy { if (it.x != null) it.x!! else 0f }
             return Vertex((vLeft!!.x!! + vRight!!.x!!) / 2f, vTop!!.y)
         }
-    val bottomCenter: Vertex?
+    val bottomCenter: Vertex
         get() {
-            if (normalizedVertices == null) return null
+            if (normalizedVertices == null) return Vertex(0f, 0f)
             val vBottom = normalizedVertices!!.maxBy { it.y!! }
             val vLeft = normalizedVertices!!.minBy { it.x!! }
             val vRight = normalizedVertices!!.maxBy { it.x!! }
             return Vertex((vLeft!!.x!! + vRight!!.x!!) / 2f, vBottom!!.y)
         }
-    val leftMiddle: Vertex?
+    val leftMiddle: Vertex
         get() {
-            if (normalizedVertices == null) return null
+            if (normalizedVertices == null) return Vertex(0f, 0f)
             val vLeft = normalizedVertices!!.minBy { it.x!! }
             val vBottom = normalizedVertices!!.maxBy { it.y!! }
             val vTop = normalizedVertices!!.minBy { it.y!! }
             return Vertex(vLeft!!.x, (vBottom!!.y!! + vTop!!.y!!) / 2f)
         }
-    val rightMiddle: Vertex?
+
+    val leftTop: Vertex
         get() {
-            if (normalizedVertices == null) return null
+            return when(normalizedVertices) {
+                null -> Vertex(0f, 0f)
+                else -> normalizedVertices!![0]
+            }
+        }
+
+    val rightMiddle: Vertex
+        get() {
+            if (normalizedVertices == null) return Vertex(0f, 0f)
             val vRight = normalizedVertices!!.maxBy { it.x!! }
             val vBottom = normalizedVertices!!.maxBy { it.y!! }
             val vTop = normalizedVertices!!.minBy { it.y!! }
             return Vertex(vRight!!.x, (vBottom!!.y!! + vTop!!.y!!) / 2f)
         }
 
+    val rightBottom: Vertex
+        get() {
+            return when(normalizedVertices) {
+                null -> Vertex(0f, 0f)
+                else -> normalizedVertices!![normalizedVertices!!.size - 2]
+            }
+        }
+
     val diameter: Float
         get() {
             try {
-                return max(bottomCenter!!.y!! - topCenter!!.y!!, rightMiddle!!.x!! - leftMiddle!!.x!!)
+                return max(bottomCenter.y!! - topCenter.y!!, rightMiddle.x!! - leftMiddle.x!!)
             } catch (e: NullPointerException) {
                 return 0f
             }
@@ -60,13 +79,20 @@ data class BoundingPoly(var normalizedVertices: ArrayList<Vertex>? = null) : Ser
 
     fun isInside(x: Float, y: Float, width: Float, height: Float) : Boolean {
         try {
-            return (x >= leftMiddle!!.deNormalize(width, height).x!!) and
-                    (x <= rightMiddle!!.deNormalize(width, height).x!!) and
-                    (y >= topCenter!!.deNormalize(width, height).y!!) and
-                    (y <= bottomCenter!!.deNormalize(width, height).y!!)
+            return (x >= leftMiddle.deNormalize(width, height).x!!) and
+                    (x <= rightMiddle.deNormalize(width, height).x!!) and
+                    (y >= topCenter.deNormalize(width, height).y!!) and
+                    (y <= bottomCenter.deNormalize(width, height).y!!)
         } catch (e: NullPointerException) {
             return false
         }
+    }
+
+    fun toRectF(width: Float, height: Float) : RectF {
+        val leftTop = this.leftTop.deNormalize(width, height)
+        val rightBottom = this.rightBottom.deNormalize(width, height)
+        return RectF(leftTop.x!!, leftTop.y!!,
+                rightBottom.x!!, rightBottom.y!!)
     }
 }
 
