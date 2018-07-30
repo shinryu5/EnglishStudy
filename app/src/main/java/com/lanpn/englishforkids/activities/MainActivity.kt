@@ -11,6 +11,7 @@ import android.provider.MediaStore
 import com.lanpn.englishforkids.R
 import android.os.Environment
 import android.speech.tts.TextToSpeech
+import android.speech.tts.Voice
 import android.view.View
 import com.lanpn.englishforkids.handlers.GcpHttpHandler
 import com.lanpn.englishforkids.handlers.ImageHandler
@@ -28,6 +29,7 @@ import java.io.File
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.collections.HashMap
 
 
 const val REQUEST_CAPTURE_CODE = 1
@@ -154,7 +156,9 @@ class MainActivity : AppCompatActivity() {
                     // Check if the user clicked on an object
                     for (annotation in annotations) {
                         if (annotation.boundingPoly!!.isInside(x, y, width.toFloat(), height.toFloat())) {
-                            textToSpeech?.speak(annotation.name, TextToSpeech.QUEUE_FLUSH, null)
+                            textToSpeech?.speak(annotation.name, TextToSpeech.QUEUE_FLUSH, HashMap( mapOf(
+                                    Pair(TextToSpeech.Engine.KEY_FEATURE_NETWORK_SYNTHESIS, "true")
+                            )))
                             // Hightlight the object
                             highlightPaint.strokeWidth = 0.01f * imageBitmap!!.width
                             drawPoly(canvas!!, highlightPaint, annotation.boundingPoly!!)
