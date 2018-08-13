@@ -7,9 +7,11 @@ import com.github.kittinunf.fuel.Fuel
 import com.google.gson.Gson
 import com.lanpn.englishforkids.models.AnnotationResponse
 import com.lanpn.englishforkids.models.LocalizedObjectAnnotation
-import com.lanpn.englishforkids.models.SingleLocalizationRequest
+import com.lanpn.englishforkids.models.ObjectLocalizationRequest
 import com.lanpn.englishforkids.utils.filterAnnotations
 import java.io.ByteArrayOutputStream
+
+const val TAG = "GcpHttpHandler"
 
 class GcpHttpHandler(private val apiKey: String,
                      private val callback: (Bitmap, List<LocalizedObjectAnnotation>) -> Unit) : ImageHandler {
@@ -20,7 +22,7 @@ class GcpHttpHandler(private val apiKey: String,
     }
 
     private fun constructRequestBody(base64: String) : String {
-        val requestObj = SingleLocalizationRequest(base64)
+        val requestObj = ObjectLocalizationRequest(base64)
         return Gson().toJson(requestObj)
     }
 
@@ -34,25 +36,27 @@ class GcpHttpHandler(private val apiKey: String,
                 .header(Pair("Content-Type", "application/json"))
                 .responseString { _, _, result ->
                     result.fold({ d ->
+                        // Parse response using Gson
                         val responseObj: AnnotationResponse = Gson().fromJson(d, AnnotationResponse::class.java)
-                        Log.d("Response", responseObj.toString())
 
-                        if (responseObj.responses == null) {
-                            callback(image, ArrayList())
-                        } else {
-                            if (responseObj.responses!!.isEmpty()) {
-                                callback(image, ArrayList())
-                            } else {
-                                val annotations = responseObj.responses!![0].localizedObjectAnnotations
-                                if (annotations == null) {
+                        // Sends annotations to callback function
+                        // If no annotations available, send empty list
+                        try {
+                            val annotations = responseObj.responses!![0].localizedObjectAnnotations
+                            callback(image, filterAnnotations(annotations!!))
+                        } catch (e: Exception) {
+                            when(e) {
+                                is NullPointerException,
+                                is IndexOutOfBoundsException -> {
                                     callback(image, ArrayList())
-                                } else {
-                                    callback(image, filterAnnotations(annotations))
+                                }
+                                else -> {
+                                    throw e
                                 }
                             }
                         }
                     }, { err ->
-                        Log.e("Fuel Error", err.message)
+                        Log.e(TAG, err.message)
                         callback(image, ArrayList())
                     })
                 }

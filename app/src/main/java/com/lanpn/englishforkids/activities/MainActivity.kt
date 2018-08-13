@@ -35,6 +35,7 @@ import kotlin.collections.HashMap
 const val REQUEST_CAPTURE_CODE = 1
 const val REQUEST_GALLERY_CODE = 2
 
+@Suppress("DEPRECATION")
 class MainActivity : AppCompatActivity() {
     private var googleApiKey: String? = null
     private var imageHandler: ImageHandler? = null
@@ -156,7 +157,10 @@ class MainActivity : AppCompatActivity() {
                     // Check if the user clicked on an object
                     for (annotation in annotations) {
                         if (annotation.boundingPoly!!.isInside(x, y, width.toFloat(), height.toFloat())) {
-                            textToSpeech?.speak(annotation.name, TextToSpeech.QUEUE_FLUSH, HashMap( mapOf(
+                            // Activate TTS with option to use network model
+                            // instead of embedded model
+                            textToSpeech?.speak(annotation.name, TextToSpeech.QUEUE_FLUSH,
+                                    HashMap(mapOf(
                                     Pair(TextToSpeech.Engine.KEY_FEATURE_NETWORK_SYNTHESIS, "true")
                             )))
                             // Hightlight the object

@@ -1,6 +1,5 @@
 package com.lanpn.englishforkids.models
 
-import android.graphics.RectF
 import java.io.Serializable
 import kotlin.math.max
 
@@ -12,9 +11,7 @@ data class LocalizedObjectAnnotation (
     var name: String? = null,
     var score: String? = null,
     var boundingPoly: BoundingPoly? = null
-) : Serializable {
-
-}
+) : Serializable
 
 data class BoundingPoly(var normalizedVertices: ArrayList<Vertex>? = null) : Serializable {
     val topCenter: Vertex
@@ -42,14 +39,6 @@ data class BoundingPoly(var normalizedVertices: ArrayList<Vertex>? = null) : Ser
             return Vertex(vLeft!!.x, (vBottom!!.y!! + vTop!!.y!!) / 2f)
         }
 
-    val leftTop: Vertex
-        get() {
-            return when(normalizedVertices) {
-                null -> Vertex(0f, 0f)
-                else -> normalizedVertices!![0]
-            }
-        }
-
     val rightMiddle: Vertex
         get() {
             if (normalizedVertices == null) return Vertex(0f, 0f)
@@ -57,14 +46,6 @@ data class BoundingPoly(var normalizedVertices: ArrayList<Vertex>? = null) : Ser
             val vBottom = normalizedVertices!!.maxBy { it.y!! }
             val vTop = normalizedVertices!!.minBy { it.y!! }
             return Vertex(vRight!!.x, (vBottom!!.y!! + vTop!!.y!!) / 2f)
-        }
-
-    val rightBottom: Vertex
-        get() {
-            return when(normalizedVertices) {
-                null -> Vertex(0f, 0f)
-                else -> normalizedVertices!![normalizedVertices!!.size - 2]
-            }
         }
 
     val diameter: Float
@@ -85,13 +66,6 @@ data class BoundingPoly(var normalizedVertices: ArrayList<Vertex>? = null) : Ser
         } catch (e: NullPointerException) {
             return false
         }
-    }
-
-    fun toRectF(width: Float, height: Float) : RectF {
-        val leftTop = this.leftTop.deNormalize(width, height)
-        val rightBottom = this.rightBottom.deNormalize(width, height)
-        return RectF(leftTop.x!!, leftTop.y!!,
-                rightBottom.x!!, rightBottom.y!!)
     }
 }
 
