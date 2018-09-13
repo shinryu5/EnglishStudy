@@ -8,15 +8,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Bitmap
 import android.media.ExifInterface
 import android.os.AsyncTask
-import android.opengl.ETC1.getHeight
-import android.opengl.ETC1.getWidth
-import android.graphics.drawable.Drawable
-import android.graphics.Matrix.MSCALE_Y
-import android.graphics.Matrix.MSCALE_X
-import android.util.Log
 import android.widget.ImageView
-import kotlin.math.min
-
 
 fun mutableBitmap(bitmap: Bitmap) : Bitmap {
     return bitmap.copy(bitmap.config, true)
