@@ -4,6 +4,7 @@ import android.graphics.drawable.BitmapDrawable
 import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
 import android.util.Log
+import com.lanpn.englishforkids.handlers.GcpClientHandler
 import com.lanpn.englishforkids.handlers.GcpHttpHandler
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -18,7 +19,7 @@ class GCPTest {
         val bitmap = d.bitmap
         var stop = false
 
-        val handler = GcpHttpHandler(key) { bm, annotations ->
+        val handler = GcpClientHandler(key) { _, annotations ->
             Log.d("Test", annotations.toString())
             stop = true
         }
