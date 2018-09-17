@@ -1,4 +1,4 @@
-# English For Kids
+# English Study
 A simple object detection app using Google's Vision API and Android's TTS feature.
 
 ## Features
