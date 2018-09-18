@@ -6,6 +6,7 @@ import android.support.test.runner.AndroidJUnit4
 import android.util.Log
 import com.lanpn.englishforkids.handlers.GcpClientHandler
 import com.lanpn.englishforkids.handlers.GcpHttpHandler
+import com.lanpn.englishforkids.utils.drawAnnotations
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -21,6 +22,7 @@ class GCPTest {
 
         val handler = GcpHttpHandler(key) { _, annotations ->
             Log.d("Test", annotations.toString())
+            val bm = drawAnnotations(bitmap, annotations)
             stop = true
         }
         handler.handleImage(bitmap)
