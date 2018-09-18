@@ -15,11 +15,11 @@ class GCPTest {
     fun test_api_call() {
         val appContext = InstrumentationRegistry.getTargetContext()
         val key = appContext.resources.getString(R.string.gcp_api_key)
-        val d = appContext.resources.getDrawable(R.mipmap.test) as BitmapDrawable
+        val d = appContext.resources.getDrawable(R.mipmap.test_small) as BitmapDrawable
         val bitmap = d.bitmap
         var stop = false
 
-        val handler = GcpClientHandler(key) { _, annotations ->
+        val handler = GcpHttpHandler(key) { _, annotations ->
             Log.d("Test", annotations.toString())
             stop = true
         }
